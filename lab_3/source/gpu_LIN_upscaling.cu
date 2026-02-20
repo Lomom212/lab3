@@ -4,11 +4,13 @@
 #include <iostream>
 
 std::uint32_t get_LIN_upscaled_width(std::uint32_t image_width){
-    return 0;
+    if (image_width == 0) return 0;
+    return (image_width * 2) -1;
 }
 
 std::uint32_t get_LIN_upscaled_height(std::uint32_t image_height){
-    return 0;
+    if (image_height == 0) return 0;
+    return (image_height * 2) -1;
 }
 
 
