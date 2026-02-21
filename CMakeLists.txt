@@ -51,4 +51,6 @@ add_executable(lab_3_V1_4
         lab_3/test/test.h
         lab_3/test_compilation/test.cpp
         lab_3/test_compilation/test.h
-        lab_3/test_compilation/test_compilation.cu)
+        lab_3/test_compilation/test_compilation.cu
+        lab_3/source/cpu_reduction.cpp
+        lab_3/source/cpu_reduction.h)
