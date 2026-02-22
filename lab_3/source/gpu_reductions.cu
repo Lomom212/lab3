@@ -5,7 +5,7 @@
 #include <limits>
 #include "common.cuh"
 
-_device_ float atomicMaxFloat(float* address, float val)
+__device__ float atomicMaxFloat(float* address, float val)
 {
     int* address_as_i = (int*)address;
     int old = *address_as_i, assumed;
@@ -13,13 +13,13 @@ _device_ float atomicMaxFloat(float* address, float val)
     do {
         assumed = old;
         old = atomicCAS(address_as_i, assumed,
-            _float_as_int(fmaxf(_int_as_float(assumed), val)));
+            __float_as_int(fmaxf(__int_as_float(assumed), val)));
     } while (assumed != old);
 
     return __int_as_float(old);
 }
 
-_global_ void max_kernel(const float* image, std::uint32_t total_pixels, float* d_max_val)
+__global__ void max_kernel(const float* image, std::uint32_t total_pixels, float* d_max_val)
 {
     std::uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
