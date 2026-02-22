@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cuda_runtime_api.h>
 #include "gpu_utilities.h"
-#include <math.h>
+#include <cmath>
 #include <cstdint>
 
 __global__ void sobel_kernel(float* f, std::uint32_t width, std::uint32_t height) {
