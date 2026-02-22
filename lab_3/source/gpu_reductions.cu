@@ -25,20 +25,20 @@ __global__ void max_kernel(const float* image, std::uint32_t total_pixels, float
     std::uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx < total_pixels) {
-        atomicMaxDouble(d_max_val, image[idx]);
+        atomicMaxFloat(d_max_val, image[idx]);
     }
 }
 
 double get_max_value(void** d_source_image, std::uint32_t source_image_height, std::uint32_t source_image_width)
 {
-    float* d_image = static_cast<double*>(*d_source_image);
+    float* d_image = static_cast<float*>(*d_source_image);
     std::uint32_t total_pixels = source_image_height * source_image_width;
 
     float* d_max_result;
-    cudaMalloc(&d_max_result, sizeof(double));
+    cudaMalloc(&d_max_result, sizeof(float));
 
     float init = -std::numeric_limits<double>::infinity();
-    cudaMemcpy(d_max_result, &init, sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_max_result, &init, sizeof(float), cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
     int blocksPerGrid = (total_pixels + threadsPerBlock - 1) / threadsPerBlock;
