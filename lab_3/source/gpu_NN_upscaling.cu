@@ -12,7 +12,7 @@ std::uint32_t get_NN_upscaled_height(std::uint32_t image_height){
     return image_height*3;
 }
 
-__global__ void nn_upscale_kernel(const double* source, double* resul, double source_width, std::uint32_t width, std::uint32_t height) {
+__global__ void nn_upscale_kernel(const double* source, double* resul, std::uint32_t source_width, std::uint32_t width, std::uint32_t height) {
     std::uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     std::uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
 
