@@ -1,12 +1,23 @@
-//
-// Created by John on 21.02.2026.
-//
+#ifndef CPU_REDUCTIONS_H
+#define CPU_REDUCTIONS_H
 
-#ifndef LAB_3_V1_4_CPU_REDUCTION_H
-#define LAB_3_V1_4_CPU_REDUCTION_H
 #include <cstdint>
-float get_max_value_serial(const float* image, std::uint32_t size);
-float get_max_value_openmp(const float* image, std::uint32_t size);
 
-#endif //LAB_3_V1_4_CPU_REDUCTION_H
+/**
+ * @brief Serielle Referenzlösung zur Bestimmung des Maximalwerts (Aufgabe 8a).
+ * * @param image Pointer auf die Bilddaten (Host-Speicher).
+ * @param size Gesamte Anzahl der Pixel.
+ * @return Maximalwert als double.
+ */
+double get_max_value_serial(const double* image, std::uint32_t size);
+
+/**
+ * @brief OpenMP-parallelisierte Referenzlösung zur Bestimmung des Maximalwerts (Aufgabe 8a).
+ * * @param image Pointer auf die Bilddaten (Host-Speicher).
+ * @param size Gesamte Anzahl der Pixel.
+ * @return Maximalwert als double.
+ */
+double get_max_value_openmp(const double* image, std::uint32_t size);
+
+#endif // CPU_REDUCTIONS_H
 

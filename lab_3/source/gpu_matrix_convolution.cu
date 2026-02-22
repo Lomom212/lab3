@@ -52,4 +52,5 @@ void matrix_convolution(void** d_source_matrix, std::uint32_t matrix_width, std:
         kernel_width,
         d_res_ptr
     );
+    cudaDeviceSynchronize();
 }
