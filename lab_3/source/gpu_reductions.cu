@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "common.cuh"
+__device__ float atomicMaxFloat(float* address, float val)
 {
     int* address_as_i = (int*)address;
     int old = *address_as_i, assumed;
