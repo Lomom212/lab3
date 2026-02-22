@@ -1,39 +1,50 @@
-#include <cstdio>
-#include <iostream>
 #include <cuda_runtime_api.h>
 #include "intermediate_image.h"
-
-#include <complex>
-
 #include "gpu_matrix_convolution.h"
 #include "gpu_utilities.h"
 
-void IntermediateImage::apply_sobel_filter(){
+void IntermediateImage::apply_sobel_filter() {
+    if (pixels.empty()) return;
 
-    std::uint32_t s_width = this->width;
-    std::uint32_t s_height = this->height;
-    size_t image_size = s_width * s_height * sizeof(float);
+    std::uint32_t num_pixels = width * height;
+    size_t img_bytes = num_pixels * sizeof(double);
 
-    float h_kernel[9] = {
-        -1.0f, 0.0f, 1.0f,
-        -2.0f, 0.0f, 2.0f,
-        -1.0f, 0.0f, 1.0f
+    double h_kernel_x[9] = {
+        -1.0, 0.0, 1.0,
+        -2.0, 0.0, 2.0,
+        -1.0, 0.0, 1.0
     };
-    std::uint32_t K_width = 3;
-    std::uint32_t K_height = 3;
 
-    float *d_img, *d_kernel, *d_result;
-    cudaMalloc(&d_img, image_size);
-    cudaMalloc(&d_kernel, 9 * sizeof(float));
-    cudaMemcpy(d_img, this->pixels.data(), image_size, cudaMemcpyHostToDevice);
+    double h_kernel_y[9] = {
+        -1.0, -2.0, -1.0,
+         0.0,  0.0,  0.0,
+         1.0,  2.0,  1.0
+    };
 
-    matrix_convolution((void**)&d_img, width, height, (void**)&d_kernel, 3, 3, (void**)&d_result);
+    void* d_img = nullptr;
+    void* d_kernel_x = nullptr;
+    void* d_kernel_y = nullptr;
+    void* d_res_x = nullptr;
+    void* d_res_y = nullptr;
 
-    gpu_sobel(d_result, width, height);
+    cudaMalloc(&d_img, img_bytes);
+    cudaMalloc(&d_kernel_x, 9 * sizeof(double));
+    cudaMalloc(&d_kernel_y, 9 * sizeof(double));
 
+    cudaMemcpy(d_img, pixels.data(), img_bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_kernel_x, h_kernel_x, 9 * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_kernel_y, h_kernel_y, 9 * sizeof(double), cudaMemcpyHostToDevice);
 
-    cudaMemcpy(this->pixels.data(), d_result, image_size, cudaMemcpyDeviceToHost);
+    matrix_convolution(&d_img, width, height, &d_kernel_x, 3, 3, &d_res_x);
+    matrix_convolution(&d_img, width, height, &d_kernel_y, 3, 3, &d_res_y);
+
+    sobel_math_processing_combined(d_res_x, d_res_y, num_pixels);
+
+    cudaMemcpy(pixels.data(), d_res_x, img_bytes, cudaMemcpyDeviceToHost);
+
     cudaFree(d_img);
-    cudaFree(d_kernel);
-    cudaFree(d_result);
+    cudaFree(d_kernel_x);
+    cudaFree(d_kernel_y);
+    cudaFree(d_res_x);
+    cudaFree(d_res_y);
 }

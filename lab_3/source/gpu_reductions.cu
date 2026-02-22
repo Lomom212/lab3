@@ -1,35 +1,56 @@
 #include "gpu_reductions.h"
-#include <cstdio>
-#include <iostream>
+
+#include <cmath>
+#include <cstdint>
 #include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
+#include <limits>
 
-__global__ void max_kernel(const float* image, std::uint32_t width, std::uint32_t height, float* d_max_val) {
-    std::uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
-    std::uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
+#include "common.cuh"
 
-    if (x < width && y < height) {
-        float pixel = image[y * width + x];
-        atomicMax((int*)d_max_val, __float_as_int(pixel));
+__device__ double atomicMaxDouble(double* address, double val)
+{
+    unsigned long long* addr_as_ull = (unsigned long long*)address;
+    unsigned long long old = *addr_as_ull, assumed;
+
+    do {
+        assumed = old;
+        double old_val = __longlong_as_double(assumed);
+        double max_val = fmax(old_val, val);
+        old = atomicCAS(addr_as_ull, assumed, __double_as_longlong(max_val));
+    } while (assumed != old);
+
+    return __longlong_as_double(old);
+}
+
+__global__ void max_kernel(const double* image, std::uint32_t total_pixels, double* d_max_val)
+{
+    std::uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (idx < total_pixels) {
+        atomicMaxDouble(d_max_val, image[idx]);
     }
 }
 
-double get_max_value(void** d_source_image, std::uint32_t source_image_height, std::uint32_t source_image_width){
-    float h_max_result = 0.0f;
-    float *d_max_result;
-    float *d_img = (float*)(*d_source_image);
+double get_max_value(void** d_source_image, std::uint32_t source_image_height, std::uint32_t source_image_width)
+{
+    double* d_image = static_cast<double*>(*d_source_image);
+    std::uint32_t total_pixels = source_image_height * source_image_width;
 
-    cudaMalloc(&d_max_result, sizeof(float));
-    cudaMemset(d_max_result,0,sizeof(float));
+    double* d_max_result;
+    cudaMalloc(&d_max_result, sizeof(double));
 
-    dim3 threadsPerBlock(16,16);
-    dim3 blocksperGrid((source_image_width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                        (source_image_height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    double init = -std::numeric_limits<double>::infinity();
+    cudaMemcpy(d_max_result, &init, sizeof(double), cudaMemcpyHostToDevice);
 
-    max_kernel<<<blocksperGrid, threadsPerBlock>>>(d_img, source_image_width, source_image_height, d_max_result);
-    cudaMemcpy(&h_max_result,d_max_result, sizeof(float), cudaMemcpyDeviceToHost);
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (total_pixels + threadsPerBlock - 1) / threadsPerBlock;
+
+    max_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_image, total_pixels, d_max_result);
+
+    double h_result;
+    cudaMemcpy(&h_result, d_max_result, sizeof(double), cudaMemcpyDeviceToHost);
+
     cudaFree(d_max_result);
 
-    float final_result = *reinterpret_cast<float*>(&h_max_result);
-    return (double)final_result;
+    return h_result;
 }

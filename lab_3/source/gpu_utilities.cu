@@ -1,28 +1,21 @@
-#include <cstdio>
-#include <iostream>
-#include <cuda_runtime_api.h>
 #include "gpu_utilities.h"
 #include <cmath>
-#include <cstdint>
+#include <device_launch_parameters.h>
+#include <cuda_runtime.h>
 
-__global__ void sobel_kernel(float* f, std::uint32_t width, std::uint32_t height) {
-    std::uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
-    std::uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (x < width && y < height) {
-        int id_x = y * width + x;
-        float value = f[id_x];
-        float f_strich = value * value;
-        float f_double_strich = f_strich + f_strich;
-        f[id_x] = sqrtf(f_double_strich);
+__global__ void sobel_math_combined_kernel(double* data_x, double* data_y, std::uint32_t size) {
+    std::uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size) {
+        double gx = data_x[idx];
+        double gy = data_y[idx];
+        data_x[idx] = sqrt(gx * gx + gy * gy);
     }
 }
 
-void gpu_sobel(float* d_matrix, std::uint32_t width, std::uint32_t height) {
-    dim3 block(16,16);
-    dim3 grid((width + block.x -1) / block.x, (height + block.y - 1) / block.y);
-
-    sobel_kernel<<<grid, block>>>(d_matrix, width, height);
+void sobel_math_processing_combined(void* d_res_x, void* d_res_y, std::uint32_t num_pixels) {
+    if (num_pixels == 0) return;
+    int threads = 256;
+    int blocks = (num_pixels + threads - 1) / threads;
+    sobel_math_combined_kernel<<<blocks, threads>>>(static_cast<double*>(d_res_x), static_cast<double*>(d_res_y), num_pixels);
+    cudaDeviceSynchronize();
 }
-
-
