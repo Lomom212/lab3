@@ -6,23 +6,20 @@
 #include <limits>
 
 #include "common.cuh"
-
-__device__ double atomicMaxDouble(double* address, double val)
 {
-    unsigned long long* addr_as_ull = (unsigned long long*)address;
-    unsigned long long old = *addr_as_ull, assumed;
+    int* address_as_i = (int*)address;
+    int old = *address_as_i, assumed;
 
     do {
         assumed = old;
-        double old_val = __longlong_as_double(assumed);
-        double max_val = fmax(old_val, val);
-        old = atomicCAS(addr_as_ull, assumed, __double_as_longlong(max_val));
+        old = atomicCAS(address_as_i, assumed,
+            __float_as_int(fmaxf(__int_as_float(assumed), val)));
     } while (assumed != old);
 
-    return __longlong_as_double(old);
-}
+    return __int_as_float(old);
+}}
 
-__global__ void max_kernel(const double* image, std::uint32_t total_pixels, double* d_max_val)
+__global__ void max_kernel(const float* image, std::uint32_t total_pixels, float* d_max_val)
 {
     std::uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -33,13 +30,13 @@ __global__ void max_kernel(const double* image, std::uint32_t total_pixels, doub
 
 double get_max_value(void** d_source_image, std::uint32_t source_image_height, std::uint32_t source_image_width)
 {
-    double* d_image = static_cast<double*>(*d_source_image);
+    float* d_image = static_cast<double*>(*d_source_image);
     std::uint32_t total_pixels = source_image_height * source_image_width;
 
-    double* d_max_result;
+    float* d_max_result;
     cudaMalloc(&d_max_result, sizeof(double));
 
-    double init = -std::numeric_limits<double>::infinity();
+    float init = -std::numeric_limits<double>::infinity();
     cudaMemcpy(d_max_result, &init, sizeof(double), cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
@@ -47,10 +44,10 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
 
     max_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_image, total_pixels, d_max_result);
 
-    double h_result;
+    float h_result;
     cudaMemcpy(&h_result, d_max_result, sizeof(double), cudaMemcpyDeviceToHost);
 
     cudaFree(d_max_result);
 
-    return h_result;
+    return static_cast<double>(h_result);
 }
