@@ -16,7 +16,7 @@ __global__ void downsample_kernel(const double* d_source, double* d_result, std:
     std::uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     std::uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (x >= result_width && result_height) {
+    if (x < result_width && y < result_height) {
         double s = 0.0;
         double p = 0.0;
 
@@ -31,8 +31,8 @@ __global__ void downsample_kernel(const double* d_source, double* d_result, std:
                 }
             }
         }
-        if (P > 0.0) {
-            d_result[y * widthsource + x] = s /p;
+        if (p > 0.0) {
+            d_result[y * result_width + x] = s /p;
         }
     }
 
@@ -47,12 +47,12 @@ void image_downsampling(void** d_source_image, std::uint32_t source_image_height
     cudaMalloc(d_result, size);
 
     auto d_source = static_cast<const double *>(*d_source_image);
-    auto d_result = reinterpret_cast<double *>(d_result);
+    double* dresult = static_cast<double *>(*d_result);
 
     dim3 blockDim(16, 16);
     dim3 gridDim((widthsource + blockDim.x -1) / blockDim.x, (heightsource + blockDim.y -1) / blockDim.y);
 
-    downsample_kernel<<<gridDim, blockDim>>>(d_source, d_result, source_image_width, source_image_height, widthsource, heightsource);
+    downsample_kernel<<<gridDim, blockDim>>>(d_source, dresult, source_image_width, source_image_height, widthsource, heightsource);
 
     cudaDeviceSynchronize();
 }
