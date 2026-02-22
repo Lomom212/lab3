@@ -1,12 +1,11 @@
 #include "gpu_reductions.h"
-
 #include <cmath>
 #include <cstdint>
 #include <cuda_runtime.h>
 #include <limits>
-
 #include "common.cuh"
-__device__ float atomicMaxFloat(float* address, float val)
+
+_device_ float atomicMaxFloat(float* address, float val)
 {
     int* address_as_i = (int*)address;
     int old = *address_as_i, assumed;
@@ -14,13 +13,13 @@ __device__ float atomicMaxFloat(float* address, float val)
     do {
         assumed = old;
         old = atomicCAS(address_as_i, assumed,
-            __float_as_int(fmaxf(__int_as_float(assumed), val)));
+            _float_as_int(fmaxf(_int_as_float(assumed), val)));
     } while (assumed != old);
 
     return __int_as_float(old);
 }
 
-__global__ void max_kernel(const float* image, std::uint32_t total_pixels, float* d_max_val)
+_global_ void max_kernel(const float* image, std::uint32_t total_pixels, float* d_max_val)
 {
     std::uint32_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -31,14 +30,18 @@ __global__ void max_kernel(const float* image, std::uint32_t total_pixels, float
 
 double get_max_value(void** d_source_image, std::uint32_t source_image_height, std::uint32_t source_image_width)
 {
+    if (d_source_image == nullptr || *d_source_image == nullptr || source_image_height == 0 || source_image_width == 0) {
+        return 0.0;
+    }
+
     float* d_image = static_cast<float*>(*d_source_image);
     std::uint32_t total_pixels = source_image_height * source_image_width;
 
     float* d_max_result;
     cudaMalloc(&d_max_result, sizeof(float));
 
-    float init = -std::numeric_limits<double>::infinity();
-    cudaMemcpy(d_max_result, &init, sizeof(float), cudaMemcpyHostToDevice);
+    float h_init = -std::numeric_limits<float>::infinity();
+    cudaMemcpy(d_max_result, &h_init, sizeof(float), cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
     int blocksPerGrid = (total_pixels + threadsPerBlock - 1) / threadsPerBlock;
@@ -46,7 +49,7 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
     max_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_image, total_pixels, d_max_result);
 
     float h_result;
-    cudaMemcpy(&h_result, d_max_result, sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&h_result, d_max_result, sizeof(float), cudaMemcpyDeviceToHost);
 
     cudaFree(d_max_result);
 
