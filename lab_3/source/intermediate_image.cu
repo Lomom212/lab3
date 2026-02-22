@@ -25,14 +25,14 @@ void IntermediateImage::apply_sobel_filter(){
     float *d_img, *d_kernel, *d_result;
     cudaMalloc(&d_img, image_size);
     cudaMalloc(&d_kernel, 9 * sizeof(float));
-    cudaMemcpy(d_img, this->pixels, image_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_img, this->pixels.data(), image_size, cudaMemcpyHostToDevice);
 
     matrix_convolution((void**)&d_img, width, height, (void**)&d_kernel, 3, 3, (void**)&d_result);
 
     gpu_sobel(d_result, width, height);
 
 
-    cudaMemcpy(this->pixels, d_result, image_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(this->pixels.data(), d_result, image_size, cudaMemcpyDeviceToHost);
     cudaFree(d_img);
     cudaFree(d_kernel);
     cudaFree(d_result);
