@@ -9,16 +9,17 @@
 static void serial_benchmark(benchmark::State& state) {
 	const auto n = state.range(0);
 	uint32_t total_pixels = static_cast<uint32_t>(n) * n;
-
 	std::vector<float> data(total_pixels, 1.0f);
 	data[total_pixels - 1] = 500.0f;
+
 	for (auto _ : state) {
 		float result = get_max_value_serial(data.data(), total_pixels);
 		benchmark::DoNotOptimize(result);
 	}
+	state.SetItemsProcessed(state.iterations() * total_pixels);
 }
 
-BENCHMARK(serial_benchmark)->Unit(benchmark::kMillisecond)->Range(1024, 8192);
+BENCHMARK(serial_benchmark)->Unit(benchmark::kMillisecond)->RangeMultiplier(2)->Range(1024, 8192);
 
 static void openmp_benchmark(benchmark::State& state) {
 	const auto n = state.range(0);
@@ -26,13 +27,15 @@ static void openmp_benchmark(benchmark::State& state) {
 
 	std::vector<float> data(total_pixels, 1.0f);
 	data[total_pixels - 1] = 500.0f;
+	state.counters["Threads"] = omp_get_max_threads();
 	for (auto _ : state) {
 		float result = get_max_value_openmp(data.data(), total_pixels);
 		benchmark::DoNotOptimize(result);
 	}
+	state.SetItemsProcessed(state.iterations() * total_pixels);
 }
 
-BENCHMARK(openmp_benchmark)->Unit(benchmark::kMillisecond)->Range(1024, 8192);
+BENCHMARK(openmp_benchmark)->Unit(benchmark::kMillisecond)->RangeMultiplier(2)->Range(1024, 8192);
 
 static void cuda_benchmark(benchmark::State& state) {
 	const auto n = state.range(0);
@@ -44,8 +47,9 @@ static void cuda_benchmark(benchmark::State& state) {
 		float result = get_max_value(data.data(), total_pixels);
 		benchmark::DoNotOptimize(result);
 	}
+	state.SetItemsProcessed(state.iterations() * total_pixels);
 }
-BENCHMARK(cuda_benchmark)->Unit(benchmark::kMillisecond)->Range(1024, 8192);
+BENCHMARK(cuda_benchmark)->Unit(benchmark::kMillisecond)->RangeMultiplier(2)->Range(1024, 8192);
 
 int main(int argc, char** argv) {
 	::benchmark::Initialize(&argc, argv);
