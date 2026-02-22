@@ -9,3 +9,4 @@ void LIN_image_upscaling(void** d_source_image, std::uint32_t source_image_heigh
 std::uint32_t get_LIN_upscaled_width(std::uint32_t image_width);
 
 std::uint32_t get_LIN_upscaled_height(std::uint32_t image_height);
+
