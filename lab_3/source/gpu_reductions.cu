@@ -18,7 +18,7 @@ __device__ float atomicMaxFloat(float* address, float val)
     } while (assumed != old);
 
     return __int_as_float(old);
-}}
+}
 
 __global__ void max_kernel(const float* image, std::uint32_t total_pixels, float* d_max_val)
 {
