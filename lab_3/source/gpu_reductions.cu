@@ -30,6 +30,6 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
     cudaMemcpy(&h_max_result,d_max_result, sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_max_result);
 
-    float final_result = __int_as_float(*(int*)&h_max_result);
+    float final_result = *reinterpret_cast<float*>(&h_max_result);
     return (double)final_result;
 }
