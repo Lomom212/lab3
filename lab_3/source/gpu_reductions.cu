@@ -37,7 +37,7 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
     float* d_max_result;
     cudaMalloc(&d_max_result, sizeof(float));
 
-    float init = -std::numeric_limits<double>::infinity();
+    float init = -std::numeric_limits<float>::infinity();
     cudaMemcpy(d_max_result, &init, sizeof(float), cudaMemcpyHostToDevice);
 
     int threadsPerBlock = 256;
@@ -46,7 +46,7 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
     max_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_image, total_pixels, d_max_result);
 
     float h_result;
-    cudaMemcpy(&h_result, d_max_result, sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&h_result, d_max_result, sizeof(float), cudaMemcpyDeviceToHost);
 
     cudaFree(d_max_result);
 
