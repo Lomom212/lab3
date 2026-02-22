@@ -50,7 +50,7 @@ void LIN_image_upscaling(void** d_source_image, std::uint32_t source_image_heigh
     cudaMalloc(d_result, size_ende);
 
     const double* source_image = static_cast<const double *>(*d_source_image);
-    double* result = static_cast<double *>(d_result);
+    double* result = static_cast<double *>(*d_result);
 
     dim3 block_dim(16, 16);
     dim3 grid_dim((width + block_dim.x -1) / block_dim.x, (height+ block_dim.y -1) / block_dim.y);
