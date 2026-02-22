@@ -41,7 +41,8 @@ static void cuda_benchmark(benchmark::State& state) {
 	std::vector<float> data(total_pixels, 1.0f);
 	data[total_pixels - 1] = 500.0f;
 	for (auto _ : state) {
-		float result = get_max_value(data.data(), total_pixels);
+		void* raw_ptr = static_cast<void*>(data.data());
+		float result = get_max_value(&raw_ptr, 1, total_pixels);
 		benchmark::DoNotOptimize(result);
 	}
 }

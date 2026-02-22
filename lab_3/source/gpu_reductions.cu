@@ -14,7 +14,7 @@ __global__ void max_kernel(const float* image, std::uint32_t width, std::uint32_
     }
 }
 
-double get_max_value(void** d_source_image, std::uint32_t source_image_height, std::uint32_t source_image_width){
+double get_max_value(float* d_source_image, std::uint32_t total_pixels){
     float h_max_result = 0.0f;
     float *d_max_result;
     float *d_img = (float*)(*d_source_image);
@@ -22,9 +22,9 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
     cudaMalloc(&d_max_result, sizeof(float));
     cudaMemset(d_max_result,0,sizeof(float));
 
-    dim3 threadsPerBlock(16,16);
-    dim3 blocksperGrid((source_image_width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                        (source_image_height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    int  threadsPerBlock = 256;
+    int blocksperGrid((total_pixels + threadsPerBlock - 1) / threadsPerBlock);
+
 
     max_kernel<<<blocksperGrid, threadsPerBlock>>>(d_img, source_image_width, source_image_height, d_max_result);
     cudaMemcpy(&h_max_result,d_max_result, sizeof(float), cudaMemcpyDeviceToHost);
